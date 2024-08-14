@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <AssemblyName>ExampleMod</AssemblyName>
+        <AssemblyName>YukiTest</AssemblyName>
         <Description>Example Mod</Description>
         <TargetFramework>netstandard2.1</TargetFramework>
         <Version>1.0.0</Version>
@@ -8,15 +8,37 @@
         <LangVersion>latest</LangVersion>
 
         <!-- todo macOS -->
-        <NineSolsPath Condition="'$(OS)' == 'Windows_NT'">C:/Program Files (x86)/Steam/steamapps/common/Nine Sols</NineSolsPath>
+        <NineSolsPath Condition="'$(OS)' == 'Windows_NT'">D:\Games\Nine Sols</NineSolsPath>
         <NineSolsPath Condition="'$(OS)' != 'Windows_NT'">$(HOME)/.local/share/Steam/steamapps/common/Nine Sols</NineSolsPath>
         <CopyDir>$(NineSolsPath)/BepInEx/scripts</CopyDir>
         <!-- <CopyDir>$(NineSolsPath)/BepInEx/plugins</CopyDir> without ScriptEngine for hot reloading https://github.com/BepInEx/BepInEx.Debug/blob/master/README.md#scriptengine -->
     </PropertyGroup>
+    <ItemGroup>
+      <None Remove="Resources\cube" />
+      <None Remove="Resources\monsters" />
+      <None Remove="Resources\scene" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\cube" />
+      <EmbeddedResource Include="Resources\monsters" />
+      <EmbeddedResource Include="Resources\scene" />
+    </ItemGroup>
 
     <ItemGroup>
         <Reference Include="Assembly-CSharp">
             <HintPath>$(NineSolsPath)/NineSols_Data/Managed/Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="barbaro.autoattributes.Runtime">
+          <HintPath>..\..\..\..\Games\Nine Sols\NineSols_Data\Managed\barbaro.autoattributes.Runtime.dll</HintPath>
+        </Reference>
+        <Reference Include="guidRef">
+          <HintPath>..\..\..\..\Games\Nine Sols\NineSols_Data\Managed\guidRef.dll</HintPath>
+        </Reference>
+        <Reference Include="NineSolsAPI">
+          <HintPath>..\..\..\..\Games\Nine Sols\BepInEx\plugins\NineSolsAPI.dll</HintPath>
+        </Reference>
+        <Reference Include="QFSW.QC">
+          <HintPath>..\..\..\..\Games\Nine Sols\NineSols_Data\Managed\QFSW.QC.dll</HintPath>
         </Reference>
         <Reference Include="rcg.rcgmakercore.Runtime">
             <HintPath>$(NineSolsPath)/NineSols_Data/Managed/rcg.rcgmakercore.Runtime.dll</HintPath>
@@ -26,6 +48,9 @@
         </Reference>
         <Reference Include="InControl">
             <HintPath>$(NineSolsPath)/NineSols_Data/Managed/InControl.dll</HintPath>
+        </Reference>
+        <Reference Include="UniTask">
+          <HintPath>..\..\..\..\Games\Nine Sols\NineSols_Data\Managed\UniTask.dll</HintPath>
         </Reference>
     </ItemGroup>
 
