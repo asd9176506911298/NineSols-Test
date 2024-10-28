@@ -14,14 +14,18 @@
         <!-- <CopyDir>$(NineSolsPath)/BepInEx/plugins</CopyDir> without ScriptEngine for hot reloading https://github.com/BepInEx/BepInEx.Debug/blob/master/README.md#scriptengine -->
     </PropertyGroup>
     <ItemGroup>
+      <None Remove="Resources\AssetBundles" />
       <None Remove="Resources\cube" />
-      <None Remove="Resources\monsters" />
       <None Remove="Resources\scene" />
+      <None Remove="Resources\testscript" />
+      <None Remove="Resources\tree" />
     </ItemGroup>
     <ItemGroup>
+      <EmbeddedResource Include="Resources\AssetBundles" />
       <EmbeddedResource Include="Resources\cube" />
-      <EmbeddedResource Include="Resources\monsters" />
       <EmbeddedResource Include="Resources\scene" />
+      <EmbeddedResource Include="Resources\testscript" />
+      <EmbeddedResource Include="Resources\tree" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,6 +55,9 @@
         </Reference>
         <Reference Include="UniTask">
           <HintPath>..\..\..\..\Games\Nine Sols\NineSols_Data\Managed\UniTask.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UI">
+          <HintPath>UnityEngine.UI.dll</HintPath>
         </Reference>
     </ItemGroup>
 

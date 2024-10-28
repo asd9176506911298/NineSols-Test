@@ -6,6 +6,12 @@ using NineSolsAPI.Utils;
 using UnityEngine.SceneManagement;
 using System;
 using HarmonyLib;
+using Cysharp.Threading.Tasks.Triggers;
+using Com.LuisPedroFonseca.ProCamera2D;
+using RCGMaker.Core;
+using System.IO;
+using System.Collections.Generic;
+using Auto.Utils;
 
 namespace ExampleMod;
 
@@ -16,12 +22,16 @@ public class ExampleMod : BaseUnityPlugin {
     private ConfigEntry<bool> enableSomethingConfig;
     private ConfigEntry<KeyboardShortcut> somethingKeyboardShortcut;
 
+    private AssetBundle assetBundles;
     private AssetBundle cubeBundle;
-    private AssetBundle sceneBundle;
+    public static AssetBundle sceneBundle;
+    private AssetBundle testBuundle;
     private AssetBundle monstersBundle;
-    
+    private AssetBundle tree;
+
     private GameObject cube;
     private GameObject pepe;
+    private GameObject danceRemoveObject;
 
     private void Awake() {
         Log.Init(Logger);
@@ -38,26 +48,33 @@ public class ExampleMod : BaseUnityPlugin {
         // and put it in BepInEx/plugins/.
 
         KeybindManager.Add(this, TestMethod, () => somethingKeyboardShortcut.Value);
-        KeybindManager.Add(this, TestMethod2, KeyCode.Z);
-        KeybindManager.Add(this, TestMethod3, KeyCode.X);
-        KeybindManager.Add(this, Show, KeyCode.C);
-        KeybindManager.Add(this, Hide, KeyCode.V);
-
+        //KeybindManager.Add(this, z, KeyCode.Z);
+        //KeybindManager.Add(this, x, KeyCode.X);
+        //KeybindManager.Add(this, c, KeyCode.C);
+        //KeybindManager.Add(this, v, KeyCode.V);
 
         Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
 
 
 
-
+        assetBundles = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.AssetBundles");
         cubeBundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.cube");
         sceneBundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.scene");
-        
+        testBuundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.testscript");
+        tree = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.tree");
+
+
         //bundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.cube.bundle").LoadAsset<GameObject>("Square");
         pepe = cubeBundle.LoadAsset<GameObject>("pepe");
+        danceRemoveObject = tree.LoadAsset<GameObject>("danceRemoveObject");
+        //newClip = tree.LoadAsset<AnimationClip>("treeAnimation");
+        //newClip = tree.LoadAsset<AnimationClip>("wolfAnimation");
+        //newClip = tree.LoadAsset<AnimationClip>("danceAnimation");
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void Update() { 
+       
     }
     public static string GetGameObjectPath(GameObject obj)
     {
@@ -136,9 +153,104 @@ public class ExampleMod : BaseUnityPlugin {
             monsterBase.transform.position = new Vector3(playerPos.x - 250, playerPos.y, 0f);
 
     }
+    public AnimationClip newClip;
+
+    private void ReplaceAnimationClip(Animator animator)
+    {
+        // Get the RuntimeAnimatorController
+        var controller = animator.runtimeAnimatorController;
+        if (controller == null)
+        {
+            Logger.LogError("AnimatorController not found");
+            return;
+        }
+
+        // If the controller is an AnimatorOverrideController, you can replace clips more easily
+        if (controller is AnimatorOverrideController overrideController)
+        {
+            ReplaceClipInOverrideController(overrideController);
+        }
+        else
+        {
+            // If it's a normal RuntimeAnimatorController, you can assign a new AnimatorOverrideController
+            var newOverrideController = new AnimatorOverrideController(controller);
+            ReplaceClipInOverrideController(newOverrideController);
+            animator.runtimeAnimatorController = newOverrideController;
+        }
+    }
+
+    private void ReplaceClipInOverrideController(AnimatorOverrideController overrideController)
+    {
+        // Create an array to hold the original clips
+        var overrides = overrideController.animationClips; // Get all original animation clips
+
+        foreach (var originalClip in overrides)
+        {
+            ToastManager.Toast(originalClip.name);  
+            List<string> clipNamesToReplace = new List<string> { "Idle", "Run", "Jump", "Fall", "FallToGround", "RunStart", "RunBreak", "TurnAround", "Jump_2_Fall", "RunStart" };
+
+            // Check if the originalClip.name is in the list
+            if (clipNamesToReplace.Contains(originalClip.name))
+            {
+                ToastManager.Toast($"Replacing {originalClip.name} with newClip");
+                overrideController[originalClip] = newClip; // Replace with the new clip
+            }
+        }
+    }
 
     private void TestMethod() {
         if (!enableSomethingConfig.Value) return;
+
+        //ToastManager.Toast(GameObject.Find("StealthGameMonster_Minion"));
+        //ToastManager.Toast(GameObject.Find("A3_S2/Room/Prefab/Gameplay_2/NPC_ChiYou_A3狀態FSM/FSM Animator").GetComponent<Animator>().runtimeAnimatorController.animationClips[0]);
+
+        //Player.i.animator.runtimeAnimatorController.animationClips[2] = GameObject.Find("A3_S2/Room/Prefab/Gameplay_2/NPC_ChiYou_A3狀態FSM/FSM Animator").GetComponent<Animator>().runtimeAnimatorController.animationClips[0];
+        ToastManager.Toast(Player.i.animator.gameObject.name);
+
+        Vector3 dancePos = new Vector3(Player.i.transform.position.x, Player.i.transform.position.y + 35, Player.i.transform.position.z);
+        GameObject skin = Instantiate(danceRemoveObject, dancePos, Quaternion.identity, GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder").transform);
+        skin.transform.localPosition = new Vector3 ( 0f, 11.2001f, 0f );
+        skin.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
+        GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").layer = LayerMask.NameToLayer("UI");
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder").GetComponent<SpriteRenderer>().enabled = false;
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").SetActive(false);
+
+
+        //Vector3 dancePos = new Vector3(Player.i.transform.position.x, Player.i.transform.position.y + 50, Player.i.transform.position.z);
+        //dancePos.x -= 50;
+        //dancePos.y -= 25;
+        //Instantiate(danceRemoveObject, dancePos, Quaternion.Euler(0, 0, 45)).transform.SetParent(GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").transform);
+        //dancePos.x += 50;
+        //dancePos.y += 25;
+        //Instantiate(danceRemoveObject, dancePos, Quaternion.Euler(0, 0, 0)).transform.SetParent(GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").transform);
+        //dancePos.x += 50;
+        //dancePos.y -= 25;
+        //Instantiate(danceRemoveObject, dancePos, Quaternion.Euler(0, 0, -45)).transform.SetParent(GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").transform);
+
+
+        //newClip = Player.i.animator.runtimeAnimatorController.animationClips[1];
+        //newClip = GameObject.Find("A3_S2/Room/Prefab/NPC_GuideFish A3Variant/General FSM Object/Animator(FSM)").GetComponent<Animator>().runtimeAnimatorController.animationClips[0];
+        //newClip = tree.LoadAsset<AnimationClip>("treeAnimation");
+        //newClip = tree.LoadAsset<AnimationClip>("wolfAnimation");
+        //newClip = tree.LoadAsset<AnimationClip>("danceAnimation");
+        //newClip = tree.LoadAsset<AnimationClip>("danceRemoveAnimation");
+
+        //if (newClip == null)
+        //{
+        //    return;
+        //}
+        //ToastManager.Toast(newClip);
+        //ToastManager.Toast(GameObject.Find("A3_S2/Room/Prefab/NPC_GuideFish A3Variant/General FSM Object/Animator(FSM)").GetComponent<Animator>().runtimeAnimatorController.animationClips[0]);
+
+        //ReplaceAnimationClip(Player.i.animator);
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder").transform.localPosition = new Vector3(12f, 26.9551f, 0f);
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").SetActive(false);
+        //Destroy(GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerSprite").GetComponent<SpriteRenderer>());
+
+        //var camera = GameObject.Find("A1_S2_GameLevel/CameraCore");
+        //ToastManager.Toast(camera);
+        //camera.transform.SetParent(null);
+        //RCGLifeCycle.DontDestroyForever(camera);
 
         //ToastManager.Toast($"test {GameObject.Find("StealthGameMonster_Samurai_General_Boss Variant (RCGLifeCycle)")}");
 
@@ -193,11 +305,15 @@ public class ExampleMod : BaseUnityPlugin {
     //string name2 = "Monster_GiantMechClaw";
     //string name = "A5_S5/Room/EventBinder/General Boss Fight FSM Object_\u7d50\u6b0a/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Boss_JieChuan";
     //string name2 = "StealthGameMonster_Boss_JieChuan";
-    private void Show()
+    private void c()
     {
         ToastManager.Toast("C");
-        string name = "";
-        string name2 = "";
+
+        //StartMenuLogic.Instance.StartGame("A4_S4_Container_Final");
+
+        //StartMenuLogic.Instance.StartGame("testScript");
+        //string name = "";
+        //string name2 = "";
 
 
         //name = "A2_S5_ BossHorseman_GameLevel/Room/StealthGameMonster_SpearHorseMan";
@@ -229,28 +345,128 @@ public class ExampleMod : BaseUnityPlugin {
 
     }
 
-    private void Hide()
+    public Camera cameraToUse;
+    public GameObject objectToCapture;
+    public int width = 1024;
+    public int height = 1024;
+
+    void CaptureScreenshot()
     {
-        ToastManager.Toast("V");
-        string name2 = "";
-        //ToastManager.Toast(GameObject.Find(name2 + " (RCGLifeCycle)"));
-        name2 = "StealthGameMonster_SpearHorseMan";
-        SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
-        name2 = "Boss_Yi Gung";
-        SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
-        name2 = "Monster_GiantMechClaw";
-        SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
-        name2 = "StealthGameMonster_Boss_JieChuan";
-        SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
+        // Find the camera dynamically if not set in inspector
+        //if (cameraToUse == null)
+        //{
+        //    //cameraToUse = GameObject.Find("GameCore(Clone)/RCG LifeCycle/UIManager/GameplayUICamera").GetComponent<Camera>();
+        //    cameraToUse = GameObject.Find("SceneCamera").GetComponent<Camera>();
+        //}
+
+        cameraToUse = GameObject.Find("SceneCamera").GetComponent<Camera>();
+
+
+        GameObject SceneCamera = GameObject.Find("SceneCamera");
+        if (SceneCamera != null)
+        {
+            SceneCamera.SetActive(false);
+            SceneCamera.SetActive(true);
+        }
+
+        //cameraToUse = GameObject.Find("A4_S5/Room/Prefab/A4_Screen_Camera").GetComponent<Camera>();
+
+        // Set the desired resolution (3840x2160)
+        int width = 3840;
+        int height = 2160;
+
+        // Create a RenderTexture with the desired resolution
+        RenderTexture rt = new RenderTexture(width, height, 24);
+        cameraToUse.targetTexture = rt;
+
+        // Set the background to transparent
+        cameraToUse.clearFlags = CameraClearFlags.SolidColor;
+        cameraToUse.backgroundColor = new Color(0, 0, 0, 0); // Fully transparent
+
+        // Render the object to the RenderTexture
+        RenderTexture.active = rt;
+        cameraToUse.Render();
+
+        // Create a Texture2D to read pixels from the RenderTexture
+        Texture2D screenshot = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+        screenshot.Apply();
+
+        // Convert the texture to PNG
+        byte[] bytes = screenshot.EncodeToPNG();
+
+        // Save the PNG to file
+        string path = Path.Combine(Application.dataPath, "Screenshot.png");
+        File.WriteAllBytes(path, bytes);
+
+        // Clean up
+        cameraToUse.targetTexture = null;
+        RenderTexture.active = null;
+        Destroy(rt);
+
+        Debug.Log("Screenshot saved to: " + path);
+    }
+
+
+    private void v()
+    {
+        //ToastManager.Toast("DontDestroyForever ZGunAndDoor");
+        //string name = "A4_S4/ZGunAndDoor/ZGun FSM Object Variant";
+        //string name = "A4_S4/ZGunAndDoor";
+        //GameObject.Find(name).transform.SetParent(null);
+        //RCGLifeCycle.DontDestroyForever(GameObject.Find("ZGunAndDoor"));
+
+
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/UIManager/GameplayUICamera/Always Canvas/DialoguePlayer(KeepThisEnable)").GetComponent<Canvas>().enabled = false;
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/UIManager/GameplayUICamera/Always Canvas/DialoguePlayer(KeepThisEnable)/BackgroundCanvas").active = false;
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/UIManager/GameplayUICamera/Always Canvas/DialoguePlayer(KeepThisEnable)/DialoguePanel").transform.localPosition = new Vector3(0,100,0);
+        GameObject amplifyLightingSystem = GameObject.Find("AmplifyLightingSystem");
+        if (amplifyLightingSystem != null && amplifyLightingSystem.activeSelf)
+        {
+            amplifyLightingSystem.SetActive(false);
+        }
+
+        GameObject bubbleCamera = GameObject.Find("BubbleCamera");
+        if (bubbleCamera != null && bubbleCamera.activeSelf)
+        {
+            bubbleCamera.SetActive(false);
+        }
+
+
+        CaptureScreenshot();
+
+
+
+        //GameObject.Find("A9_S1/Room/Prefab/Shield Giant Bot Control Provider Variant").transform.SetParent(null);
+        //RCGLifeCycle.DontDestroyForever(GameObject.Find("Shield Giant Bot Control Provider Variant"));
+
+        //ToastManager.Toast("V");
+        //string name2 = "";
+        ////ToastManager.Toast(GameObject.Find(name2 + " (RCGLifeCycle)"));
+        //name2 = "StealthGameMonster_SpearHorseMan";
+        //SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
+        //name2 = "Boss_Yi Gung";
+        //SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
+        //name2 = "Monster_GiantMechClaw";
+        //SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
+        //name2 = "StealthGameMonster_Boss_JieChuan";
+        //SingletonBehaviour<PoolManager>.Instance.BorrowOrInstantiate(GameObject.Find(name2 + " (RCGLifeCycle)"), Player.i.transform.position, Quaternion.identity, null, null);
         //SpawnMonster(GameObject.Find(name + " (RCGLifeCycle)").GetComponent<MonsterPoolObjectWrapper>());
     }
 
-    private GameObject boss;
-
-    private void TestMethod2()
+    private void z()
     {
+        //ToastManager.Toast(GameObject.Find("General FSM Object/--[States]/FSM/[State] 立繪對話"));
+        //GameObject.Find("General FSM Object/--[States]/FSM/[State] 立繪對話").GetComponent<GeneralState>().OnStateEnter();
+        //GameCore.Instance.GoToScene("A1_S2_ConnectionToElevator_Final");
+        //GameCore.Instance.GoToScene("A11_S0_Boss_YiGung");
+
+        //string[] s = { "SampleScene" };
+        //GameCore.Instance.allScenes.AddRange(s);
+        //SceneManager.LoadScene("SampleScene");
         //ToastManager.Toast("Cube");
         //pepe.layer = LayerMask.NameToLayer("OneWay");
+        //pepe.layer = LayerMask.NameToLayer("Solid");  
         //Instantiate(pepe, Player.i.transform.position, Quaternion.identity);
         //ToastManager.Toast(sceneBundle.GetAllAssetNames());
         //ToastManager.Toast("SampleScene");
@@ -263,9 +479,12 @@ public class ExampleMod : BaseUnityPlugin {
         //x.sceneName = "SampleScene";
         //ApplicationCore.Instance.StartGameGoTo(x);
         //SceneManager.LoadScene("SampleScene");
+
+        SceneManager.LoadScene("testScript");
+        Player.i.AllFull();
         //GameCore.Instance.GoToScene("SampleScene");
-        monstersBundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.monsters");
-        GameCore.Instance.GoToScene("A1_S2_ConnectionToElevator_Final");
+        //monstersBundle = AssemblyUtils.GetEmbeddedAssetBundle("ExampleMod.Resources.monsters");
+        //GameCore.Instance.GoToScene("A1_S2_ConnectionToElevator_Final");
         //Logger.LogInfo(GameObject.Find("A1_S2_GameLevel/Room/Prefab/Gameplay5/EventBinder/LootProvider/General Boss Fight FSM ObjectA1_S2_\u5927\u528d\u5175/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Samurai_General_Boss Variant"));
         //RCGLifeCycle.DontDestroyForever(GameObject.Find("A1_S2_GameLevel/Room/Prefab/Gameplay5/EventBinder/LootProvider/General Boss Fight FSM ObjectA1_S2_\u5927\u528d\u5175/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Samurai_General_Boss Variant"));
         //boss = GameObject.Find("A1_S2_GameLevel/Room/Prefab/Gameplay5/EventBinder/LootProvider/General Boss Fight FSM ObjectA1_S2_\u5927\u528d\u5175/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Samurai_General_Boss Variant");
@@ -273,22 +492,36 @@ public class ExampleMod : BaseUnityPlugin {
 
     }
 
-    private void TestMethod3()
+    public void PlayerHealthUpdate()
     {
-        ToastManager.Toast("save");
 
-        boss = GameObject.Find("StealthGameMonster_Samurai_General_Boss Variant");
-        RCGLifeCycle.DontDestroyForever(boss);
-        ToastManager.Toast(boss);
-        if (monstersBundle != null)
-        {
-            monstersBundle.Unload(false);
-        }
+    }
+
+    private void x()
+    {
+        ToastManager.Toast("x");
+        var light = GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerLightmask");
+        ToastManager.Toast(GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerLightmask"));
+        light.transform.localScale = new Vector3(5000f, 5000f, 5000f);
+        Player.i.transform.position = new Vector3(0f, 75f, 0f);
+        GameObject.Find("CameraCore (RCGLifeCycle)").GetComponent<ProCamera2DNumericBoundaries>().enabled = false;
+
+        //boss = GameObject.Find("StealthGameMonster_Samurai_General_Boss Variant");
+        //RCGLifeCycle.DontDestroyForever(boss);
+        //ToastManager.Toast(boss);
+        //if (monstersBundle != null)
+        //{
+        //    monstersBundle.Unload(false);
+        //}
     }
 
     private void OnDestroy() {
         // Make sure to clean up resources here to support hot reloading
-        if(cubeBundle != null)
+        if (assetBundles != null)
+        {
+            assetBundles.Unload(false);
+        }
+        if (cubeBundle != null)
         {
             cubeBundle.Unload(false);
         }
@@ -298,14 +531,40 @@ public class ExampleMod : BaseUnityPlugin {
             sceneBundle.Unload(false);
         }
 
+        if (testBuundle != null)
+        {
+            testBuundle.Unload(false);
+        }
+
+        if (tree != null)
+        {
+            tree.Unload(false);
+        }
+
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        
-        Logger.LogInfo($"Scene loaded: {scene.name} {scene.GetRootGameObjects()} {GameObject.Find("A1_S2_GameLevel/Room/Prefab/Gameplay5/EventBinder/LootProvider/General Boss Fight FSM ObjectA1_S2_\u5927\u528d\u5175/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Samurai_General_Boss Variant")}");
+        //GameObject.Find("GameCore(Clone)/RCG LifeCycle/PPlayer/RotateProxy/SpriteHolder/PlayerLightmask").active = false;
+        //GameObject.Find("CameraCore (RCGLifeCycle)/DockObj/OffsetObj/ShakeObj/SceneCamera").GetComponent<Camera>().enabled = false;
+        foreach (var x in Camera.allCameras)
+        {
+            ToastManager.Toast(x);
+        }
+        //Logger.LogInfo($"Scene loaded: {scene.name} {scene.GetRootGameObjects()} {GameObject.Find("A1_S2_GameLevel/Room/Prefab/Gameplay5/EventBinder/LootProvider/General Boss Fight FSM ObjectA1_S2_\u5927\u528d\u5175/FSM Animator/LogicRoot/---Boss---/BossShowHealthArea/StealthGameMonster_Samurai_General_Boss Variant")}");
 
+        //ToastManager.Toast($"OnSceneLoaded {GameObject.Find("GameObject")}");
+        //GameObject.Find("Boss").AddComponent<code>();
+        //GameObject.Find("Boss/Canvas/HealthBar").AddComponent<FloatingHealthBar>(); 
+        
+        //GameObject.Find("Boss/Canvas/HealthBar").transform.localScale = new Vector3(5000, 5000, 5000);
+        //GameObject.Find("Boss").AddComponent<EyeOfCthulhu>();
+        //GameObject.Find("Boss").transform.localScale = new Vector3(50, 50, 50);
+        //GameObject.Find("Boss").AddComponent<BossBehavior>();
+        //GameObject.Find("Square").AddComponent<code>();
+        //GameObject.Find("Ball").AddComponent<Ball>();
+        //GameObject.Find("GroundArea").AddComponent<Shooter>();
 
     }
 }
